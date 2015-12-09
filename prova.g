@@ -5,7 +5,7 @@ options {
 }
 
 @lexer::header {
-   package myCompiler;
+   package it.unibg.qatest; //Modifico qualcosa
 }
 
 @lexer::members {
