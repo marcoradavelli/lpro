@@ -46,7 +46,7 @@ answer: (textAnswer | numberAnswer | yesNoAnswer | optionAnswer);
 textAnswer: text=STRING;
 
 numberAnswer: 
-  (expressionAnswer | number=DOUBLE)
+  (expressionAnswer | number=INT | number=DOUBLE) // se mettevo solo DOUBLE, dava errore di "no viable input" in alcuni casi.
   ('+-' epsilon=DOUBLE)? ;
 
 expressionAnswer: 'eval' expression=STRING;
@@ -62,9 +62,9 @@ ID : '^'? ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')*;
 
 INT : ('0'..'9')+;
 
-STRING : ('"' ('\\' .|~(('\\'|'"')))* '"'|'\'' ('\\' .|~(('\\'|'\'')))* '\'');
+DOUBLE: '-'? INT ('.' INT (('E'|'e') '-'? INT)?)? ;
 
-DOUBLE: '-'? INT ('.' INT (('E'|'e') '-'? INT)?)?;
+STRING : ('"' ('\\' .|~(('\\'|'"')))* '"'|'\'' ('\\' .|~(('\\'|'\'')))* '\'');
 
 ML_COMMENT : '/*' ( options {greedy=false;} : . )*'*/';
 
