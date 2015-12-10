@@ -1,0 +1,40 @@
+Title: "A quiz"
+[max 2 tries]
+
+Question:
+	"Are you ready?" -> yes!
+
+Section: "Math"
+{
+	[reveal correct answer]
+	[max 3 tries]
+	
+	Question Sum:
+		"How much is 2 + 2?" -> 4!
+		Jumpto "Continent" if less than 2 tries
+
+	Question Sub:
+		"How much is 2 - 2?" -> #1!
+		Candidates { 0, 1, 2 }
+	
+	Question SquareRoot:
+		"How much is Sqrt(2)?" -> 1.41 +- 0.01!
+		Jumpto "Geography" if less than 2 tries
+	
+	Question Pi:
+		"What is the value of PI?" -> eval "Math.PI" +- 0.01!
+}
+
+Section Geography: "Geography"
+{
+	Question Continent:
+		"What continent is Italy part of?" -> #3!
+	Candidates {
+		"Africa",
+		"South America",
+		"Europe"
+	}
+
+	Question:
+		"What is the capital of Italy?" -> "Rome"!
+}
