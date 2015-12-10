@@ -2,7 +2,6 @@ grammar Qatest;
 
 options {
   language = Java;
-  k=1;
 }
 
 @header{
@@ -22,9 +21,9 @@ options {
 qaTest: 'Title: ' STRING (qaContainerOptions)? (qaPart)*;
 
 qaContainerOptions:
-  ('[' 'max' maxTries=INT 'tries' ']')
   {boolean revealAnswer=false;}
-  ('[' 'reveal' 'correct' 'answer' ']' {revealAnswer=true;})? ;
+  ('[' 'reveal' 'correct' 'answer' ']' {revealAnswer=true;})?
+  ('[' 'max' maxTries=INT 'tries' ']');
   
 qaPart: question | qaSection;
 
@@ -59,21 +58,18 @@ optionAnswer: '#' optionNumber=INT;
 
 // lexer
 
-fragment LETTER:
-('a'..'z'|'A'..'Z');
-
-ID: LETTER ('0'..'9'|LETTER|'_')*;
-
-WS: (' '| '\t' | '\r' | '\n')+{skip();};
+ID : '^'? ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')*;
 
 INT : ('0'..'9')+;
 
 STRING : ('"' ('\\' .|~(('\\'|'"')))* '"'|'\'' ('\\' .|~(('\\'|'\'')))* '\'');
 
+DOUBLE: '-'? INT ('.' INT (('E'|'e') '-'? INT)?)?;
+
 ML_COMMENT : '/*' ( options {greedy=false;} : . )*'*/';
 
 SL_COMMENT : '//' ~(('\n'|'\r'))* ('\r'? '\n')?;
 
-SCAN_ERROR: . {System.out.println("Trovato errore: "+myVar++);} ;
+WS: (' '| '\t' | '\r' | '\n')+{skip();};
 
-DOUBLE: '-'? INT ('.' INT (('E'|'e') '-'? INT)?)?;
+SCAN_ERROR: . {System.out.println("Trovato errore");} ;
