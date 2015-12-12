@@ -1,5 +1,6 @@
 Title: "A quiz"
 [max 2 tries]
+[case sensitive]
 
 Question:
 	"Are you ready?" -> yes!
@@ -18,7 +19,7 @@ Section: "Math"
 		Candidates { 0, 1, 2 }
 	
 	Question SquareRoot:
-		"How much is Sqrt(2)?" -> 1.41 +- 0.01!
+		"How much is Sqrt(2)?" -> { 1.41 +- 0.01, -1.41 +- 0.01 }!
 		Jumpto "Geography" if less than 2 tries
 	
 	Question Pi:

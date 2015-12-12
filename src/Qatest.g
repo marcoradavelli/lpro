@@ -65,7 +65,8 @@ qaTest: 'Title: ' string (opt=qaContainerOptions)? (qaPart[opt!=null ? opt : cre
 qaContainerOptions returns[Hashtable<String,String> value]:
   { value=createDefaultOptions(); }
   (qaRevealOption { value.put("revealAnswer","true"); })?
-  (maxTries=qaMaxTriesOption { value.put("maxTries",""+maxTries); });
+  (maxTries=qaMaxTriesOption { value.put("maxTries",""+maxTries); })
+  (caseSensitive=qaCaseSensitivity { value.put("caseSensitive",""+caseSensitive); })? ;
 
 qaRevealOption: '[' 'reveal' 'correct' 'answer' ']';
 
@@ -73,22 +74,24 @@ qaMaxTriesOption returns[int maxTries]:
   '[' 'max' val=INT 'tries' ']' 
   { maxTries=Integer.parseInt($val.getText()); };
 
-qaPart[Hashtable<String,String> opt]: question[opt] | qaSection;
+qaCaseSensitivity returns[boolean isCaseSensitive]: 
+  ('[' 'case' 'sensitive' ']' {isCaseSensitive=true;}) | ('[' 'case' 'insensitive' ']' {isCaseSensitive=false;});
 
-qaSection: 
+qaPart[Hashtable<String,String> opt]: question[opt] | qaSection[opt];
+
+qaSection[Hashtable<String,String> value]: 
   'Section' (name=ID)? ':' title=string 
   '{'
     { 
     if (skip!=null && skip.equals(title)) skip=null;
     println("Section "+title); 
-    Hashtable<String,String> value = createDefaultOptions();
     }
-    (containerOptions=qaContainerOptions {value = containerOptions;})?
+    (containerOptions=qaContainerOptions {value.putAll(containerOptions);})?
     (q=question[value])*
   '}';
 
 question[Hashtable<String,String> value]:
-  'Question' (name=ID)? ':' text=string '->' correct=answer '!'
+  'Question' (name=ID)? ':' text=string '->' correctAns=correctAnswers '!'
   (candidates=candidateAnswers)?
   (nextRules=jumpRules)? 
   { 
@@ -103,11 +106,14 @@ question[Hashtable<String,String> value]:
           println((i+1)+") "+candidates.get(i).get("value"));
         } 
       }
-      String type=correct.get("answerType");
-      if (type.equals("option")) isCorrect = Integer.parseInt(correct.get("value"))==Integer.parseInt((read("Select option (1 - "+candidates.size()+"): ")));
-      else if (type.equals("text")) isCorrect = correct.get("value").equalsIgnoreCase(read("Your answer"));
-	    else if (type.equals("number")) isCorrect = checkInRange(Double.parseDouble(correct.get("value")), readDouble("Your answer"), correct.containsKey("epsilon") ? Double.parseDouble(correct.get("epsilon")) : 0);
-	    else if (type.equals("yesno")) isCorrect = (readBoolean("Your answer","yes","no")==Boolean.parseBoolean(correct.get("value")));
+      for (Hashtable<String,String> correct : correctAns) {
+        String type=correct.get("answerType");
+	      if (type.equals("option")) isCorrect = Integer.parseInt(correct.get("value"))==Integer.parseInt((read("Select option (1 - "+candidates.size()+"): ")));
+	      else if (type.equals("text")) isCorrect = (value.containsKey("caseSensitive") && Boolean.parseBoolean(value.get("caseSensitive"))) ? correct.get("value").equals(read("Your answer")) : correct.get("value").equalsIgnoreCase(read("Your answer"));
+		    else if (type.equals("number")) isCorrect = checkInRange(Double.parseDouble(correct.get("value")), readDouble("Your answer"), correct.containsKey("epsilon") ? Double.parseDouble(correct.get("epsilon")) : 0);
+		    else if (type.equals("yesno")) isCorrect = (readBoolean("Your answer","yes","no")==Boolean.parseBoolean(correct.get("value")));
+		    if (isCorrect) break;
+      }
       println(isCorrect ? "Correct!" : "Wrong!"); 
       count++;
     }
@@ -121,12 +127,16 @@ question[Hashtable<String,String> value]:
     if (!isCorrect) {
       println("No more tries available for this question.");
       if (Boolean.parseBoolean(value.get("revealAnswer"))) {
-        println("The correct answer is " + correct.get("value"));
+        println("The correct answer is " + correctAns.get(0).get("value"));
       }
     }
   }
   };
-  
+
+correctAnswers returns[ArrayList<Hashtable<String,String>> correctAnswers]:
+  { correctAnswers = new ArrayList<>(); }
+  (value=answer {correctAnswers.add(value);} | ('{' value=answer {correctAnswers.add(value);} (',' value=answer {correctAnswers.add(value);} )* '}') );
+
 candidateAnswers returns[ArrayList<Hashtable<String,String>> candidates]:
   { candidates = new ArrayList<>(); }
   'Candidates' '{' candidate=answer { candidates.add(candidate); } (',' candidate=answer { candidates.add(candidate); } )* '}';
@@ -148,7 +158,7 @@ textAnswer returns[Hashtable<String,String> value]:
 numberAnswer returns[Hashtable<String,String> value]: 
   { value = new Hashtable<>(); value.put("answerType", "number"); }
   (expression=expressionAnswer { value.put("value",""+expression); } | number=INT { value.put("value",$number.getText()); } | number=DOUBLE { value.put("value",$number.getText()); }) // se mettevo solo DOUBLE, dava errore di "no viable input" in alcuni casi.
-  (epsilon=range { value.put("range", ""+epsilon); })? ;
+  (epsilon=range { value.put("epsilon", ""+epsilon); })? ;
 
 range returns[double value]:
   '+-' epsilon=DOUBLE { value=Double.parseDouble($epsilon.getText()); };
