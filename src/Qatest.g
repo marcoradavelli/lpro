@@ -60,7 +60,7 @@ options {
 
 // parser
 
-qaTest: 'Title: ' string (qaContainerOptions)? (qaPart)*;
+qaTest: 'Title: ' string (opt=qaContainerOptions)? (qaPart[opt!=null ? opt : createDefaultOptions()])*;
 
 qaContainerOptions returns[Hashtable<String,String> value]:
   { value=createDefaultOptions(); }
@@ -73,7 +73,7 @@ qaMaxTriesOption returns[int maxTries]:
   '[' 'max' val=INT 'tries' ']' 
   { maxTries=Integer.parseInt($val.getText()); };
 
-qaPart: question[createDefaultOptions()] | qaSection;
+qaPart[Hashtable<String,String> opt]: question[opt] | qaSection;
 
 qaSection: 
   'Section' (name=ID)? ':' title=string 
