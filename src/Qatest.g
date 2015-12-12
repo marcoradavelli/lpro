@@ -16,27 +16,51 @@ options {
 }
 
 @members {
-  String skip;
+  String skip=null;
   boolean skipIsSection;
   
   String read(String s) {
-    System.out.print(s);
+    if (skip!=null) return null;
+    System.out.print(s+" ");
     BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
     try {
       return br.readLine();
     } catch (Exception e) {e.printStackTrace(); return "";}
   }
+  double readDouble(String s) {
+    return Double.parseDouble(read(s));
+  }
+  boolean readBoolean(String s, String yes, String no) {
+    return read(s).equalsIgnoreCase(yes);
+  }
+  
+  boolean checkInRange(double expected, double actual, double epsilon) {
+    return expected<=actual+epsilon && expected>=actual-epsilon;
+  }
+  
+  void println(String s) {
+    if (skip==null) System.out.println(s);
+  }
+  
   Hashtable<String,String> createDefaultOptions() {
     Hashtable<String,String> value=new Hashtable<String,String>(); 
     value.put("maxTries","1"); 
     value.put("revealAnswer","false");
     return value;
   }
+  
+  double eval(String s) {
+    ScriptEngineManager manager = new ScriptEngineManager(); //Source: http://stackoverflow.com/questions/2605032/is-there-an-eval-function-in-java
+    ScriptEngine engine = manager.getEngineByName("js");
+    try {
+      return (Double)engine.eval(s);
+    } catch (Exception e) {e.printStackTrace(); return 0;}
+  }
 }
 
 // parser
 
-qaTest: 'Title: ' STRING (qaContainerOptions)? (qaPart)*;
+qaTest: 'Title: ' string (qaContainerOptions)? (qaPart)*;
 
 qaContainerOptions returns[Hashtable<String,String> value]:
   { boolean revealAnswer=false; value=createDefaultOptions(); }
@@ -46,11 +70,11 @@ qaContainerOptions returns[Hashtable<String,String> value]:
 qaPart: question[createDefaultOptions()] | qaSection;
 
 qaSection: 
-  'Section' (name=ID)? ':' title=STRING 
+  'Section' (name=ID)? ':' title=string 
   '{'
     { 
-    if (skip!=null && skipIsSection && skip.equals($title.getText())) skip=null;
-    System.out.println("Section "+$title.getText()); 
+    if (skip!=null && skip.equals(title)) skip=null;
+    println("Section "+title); 
     Hashtable<String,String> value = createDefaultOptions();
     }
     (containerOptions=qaContainerOptions {value = containerOptions;})?
@@ -58,43 +82,58 @@ qaSection:
   '}';
 
 question[Hashtable<String,String> value]:
-  'Question' (name=ID)? ':' text=STRING '->' correct=answer '!'
-  { ArrayList<Hashtable<String,String>> candidates = new ArrayList<>(); }
+  'Question' (name=ID)? ':' text=string '->' correct=answer '!'
+  { ArrayList<Hashtable<String,String>> candidates = new ArrayList<>();
+   ArrayList<Hashtable<String,String>> nextRules = new ArrayList<>(); }
   ('Candidates' '{' candidate=answer { candidates.add(candidate); } (',' candidate=answer { candidates.add(candidate); } )* '}')?
-  (next=nextRule (',' next=nextRule)* )? 
+  (next=nextRule {nextRules.add(next);} (',' next=nextRule {nextRules.add(next);})* )? 
   { 
   boolean isCorrect=false; // at the beginning it should be false, otherwise it would skip the question
   int count=0;
-  if (skip!=null && !skipIsSection && skip.equals($text.getText())) skip=null;
+  if (skip!=null && skip.equals(text)) skip=null;
   if (skip==null) {
     while (!isCorrect && count < Integer.parseInt(value.get("maxTries"))) {
-      System.out.println($text.getText());
+      println(text);
       if (candidates.size()>0) {
         for (int i=0; i<candidates.size(); i++) {
-          System.out.println((i+1)+") "+candidates.get(i));
+          println((i+1)+") "+candidates.get(i));
+        } 
+      }
+      String type=correct.get("answerType");
+      if (type.equals("option")) isCorrect = Integer.parseInt(correct.get("value"))==Integer.parseInt((read("Select option (1 - "+candidates.size()+"): ")));
+      else if (type.equals("text")) isCorrect = correct.get("value").equalsIgnoreCase(read("Your answer"));
+	    else if (type.equals("number")) isCorrect = checkInRange(Double.parseDouble(correct.get("value")), readDouble("Your answer"), correct.containsKey("epsilon") ? Double.parseDouble(correct.get("epsilon")) : 0);
+	    else if (type.equals("yesno")) isCorrect = (readBoolean("Your answer","yes","no")==Boolean.parseBoolean(correct.get("value")));
+      println(isCorrect ? "Correct!" : "Wrong!"); 
+      count++;
+    }
+    if (nextRules.size()>0 && isCorrect) {
+      for (Hashtable<String,String> rule : nextRules) {
+        if (count < Integer.parseInt(rule.get("tries"))) {
+          skip = rule.get("next");
         }
-        String s = read("Select option (1 - "+candidates.size()+"): "); 
-        isCorrect = s.equals(correct);
-        System.out.println(isCorrect ? "Correct!" : "Wrong!"); 
-        count++;
       }
     }
     if (!isCorrect) {
-      System.out.println("No more tries available for this question.");
+      println("No more tries available for this question.");
       if (Boolean.parseBoolean(value.get("revealAnswer"))) {
-        System.out.println("The correct answer is " + correct);
+        println("The correct answer is " + correct.get("value"));
       }
     }
   }
   }
   ;
   
-nextRule: 'Jumpto' (qaPart | next=STRING) 'if' 'less' 'than' tries=INT 'tries';
+nextRule returns[Hashtable<String,String> value]: 
+  { value = new Hashtable<>(); }
+  'Jumpto' next=string { value.put("next",next); } 'if' 'less' 'than' tries=INT 'tries' { value.put("tries",$tries.getText()); }
+  ;
 
 answer returns[Hashtable<String,String> value]: 
   (ans=textAnswer {value=ans;} | ans=numberAnswer {value=ans;} | ans=yesNoAnswer {value=ans;} | ans=optionAnswer{value=ans;});
 
-textAnswer returns[Hashtable<String,String> value]: text=STRING { value=new Hashtable<>(); value.put("answerType","text"); value.put("value", $text.getText()); };
+textAnswer returns[Hashtable<String,String> value]: 
+  text=string { value=new Hashtable<>(); value.put("answerType","text"); value.put("value", text); };
 
 numberAnswer returns[Hashtable<String,String> value]: 
   { value = new Hashtable<>(); value.put("answerType", "number"); }
@@ -102,12 +141,8 @@ numberAnswer returns[Hashtable<String,String> value]:
   ('+-' epsilon=DOUBLE { value.put("epsilon", $epsilon.getText()); })? ;
 
 expressionAnswer returns[double value]: 
-  'eval' expression=STRING { 
-    ScriptEngineManager manager = new ScriptEngineManager(); //Source: http://stackoverflow.com/questions/2605032/is-there-an-eval-function-in-java
-    ScriptEngine engine = manager.getEngineByName("js");
-    try {
-      value = Double.parseDouble((String)engine.eval($expression.getText()));
-    } catch (Exception e) {e.printStackTrace(); value=0;}
+  'eval' expression=string { 
+    value = eval(expression);
   };
 
 yesNoAnswer returns[Hashtable<String,String> value]: 
@@ -119,6 +154,9 @@ optionAnswer returns[Hashtable<String,String> value]:
   '#' optionNumber=INT
   { value.put("value", $optionNumber.getText()); };
 
+string returns[String value]: 
+  val=STRING { value=$val.getText().substring(1,$val.getText().length()-1); };
+  
 
 // lexer
 
