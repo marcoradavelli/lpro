@@ -63,10 +63,16 @@ options {
 qaTest: 'Title: ' string (qaContainerOptions)? (qaPart)*;
 
 qaContainerOptions returns[Hashtable<String,String> value]:
-  { boolean revealAnswer=false; value=createDefaultOptions(); }
-  ('[' 'reveal' 'correct' 'answer' ']' { value.put("revealAnswer","true"); })?
-  ('[' 'max' maxTries=INT 'tries' ']') { value.put("maxTries",$maxTries.getText()); };
-  
+  { value=createDefaultOptions(); }
+  (qaRevealOption { value.put("revealAnswer","true"); })?
+  (maxTries=qaMaxTriesOption { value.put("maxTries",""+maxTries); });
+
+qaRevealOption: '[' 'reveal' 'correct' 'answer' ']';
+
+qaMaxTriesOption returns[int maxTries]: 
+  '[' 'max' val=INT 'tries' ']' 
+  { maxTries=Integer.parseInt($val.getText()); };
+
 qaPart: question[createDefaultOptions()] | qaSection;
 
 qaSection: 
@@ -83,10 +89,8 @@ qaSection:
 
 question[Hashtable<String,String> value]:
   'Question' (name=ID)? ':' text=string '->' correct=answer '!'
-  { ArrayList<Hashtable<String,String>> candidates = new ArrayList<>();
-   ArrayList<Hashtable<String,String>> nextRules = new ArrayList<>(); }
-  ('Candidates' '{' candidate=answer { candidates.add(candidate); } (',' candidate=answer { candidates.add(candidate); } )* '}')?
-  (next=nextRule {nextRules.add(next);} (',' next=nextRule {nextRules.add(next);})* )? 
+  (candidates=candidateAnswers)?
+  (nextRules=jumpRules)? 
   { 
   boolean isCorrect=false; // at the beginning it should be false, otherwise it would skip the question
   int count=0;
@@ -94,7 +98,7 @@ question[Hashtable<String,String> value]:
   if (skip==null) {
     while (!isCorrect && count < Integer.parseInt(value.get("maxTries"))) {
       println(text);
-      if (candidates.size()>0) {
+      if (candidates!=null && candidates.size()>0) {
         for (int i=0; i<candidates.size(); i++) {
           println((i+1)+") "+candidates.get(i).get("value"));
         } 
@@ -107,7 +111,7 @@ question[Hashtable<String,String> value]:
       println(isCorrect ? "Correct!" : "Wrong!"); 
       count++;
     }
-    if (nextRules.size()>0 && isCorrect) {
+    if (nextRules!=null && nextRules.size()>0 && isCorrect) {
       for (Hashtable<String,String> rule : nextRules) {
         if (count < Integer.parseInt(rule.get("tries"))) {
           skip = rule.get("next");
@@ -123,6 +127,14 @@ question[Hashtable<String,String> value]:
   }
   };
   
+candidateAnswers returns[ArrayList<Hashtable<String,String>> candidates]:
+  { candidates = new ArrayList<>(); }
+  'Candidates' '{' candidate=answer { candidates.add(candidate); } (',' candidate=answer { candidates.add(candidate); } )* '}';
+
+jumpRules returns[ArrayList<Hashtable<String,String>> nextRules]:
+  { nextRules = new ArrayList<>(); }
+  next=nextRule {nextRules.add(next);} (',' next=nextRule {nextRules.add(next);})*;
+
 nextRule returns[Hashtable<String,String> value]: 
   { value = new Hashtable<>(); }
   'Jumpto' next=string { value.put("next",next); } 'if' 'less' 'than' tries=INT 'tries' { value.put("tries",$tries.getText()); };
@@ -136,7 +148,10 @@ textAnswer returns[Hashtable<String,String> value]:
 numberAnswer returns[Hashtable<String,String> value]: 
   { value = new Hashtable<>(); value.put("answerType", "number"); }
   (expression=expressionAnswer { value.put("value",""+expression); } | number=INT { value.put("value",$number.getText()); } | number=DOUBLE { value.put("value",$number.getText()); }) // se mettevo solo DOUBLE, dava errore di "no viable input" in alcuni casi.
-  ('+-' epsilon=DOUBLE { value.put("epsilon", $epsilon.getText()); })? ;
+  (epsilon=range { value.put("range", ""+epsilon); })? ;
+
+range returns[double value]:
+  '+-' epsilon=DOUBLE { value=Double.parseDouble($epsilon.getText()); };
 
 expressionAnswer returns[double value]: 
   'eval' expression=string { 
