@@ -90,13 +90,13 @@ question[Hashtable<String,String> value]:
   { 
   boolean isCorrect=false; // at the beginning it should be false, otherwise it would skip the question
   int count=0;
-  if (skip!=null && skip.equals(text)) skip=null;
+  if (skip!=null && $name!=null && skip.equals($name.getText())) skip=null;
   if (skip==null) {
     while (!isCorrect && count < Integer.parseInt(value.get("maxTries"))) {
       println(text);
       if (candidates.size()>0) {
         for (int i=0; i<candidates.size(); i++) {
-          println((i+1)+") "+candidates.get(i));
+          println((i+1)+") "+candidates.get(i).get("value"));
         } 
       }
       String type=correct.get("answerType");
@@ -121,13 +121,11 @@ question[Hashtable<String,String> value]:
       }
     }
   }
-  }
-  ;
+  };
   
 nextRule returns[Hashtable<String,String> value]: 
   { value = new Hashtable<>(); }
-  'Jumpto' next=string { value.put("next",next); } 'if' 'less' 'than' tries=INT 'tries' { value.put("tries",$tries.getText()); }
-  ;
+  'Jumpto' next=string { value.put("next",next); } 'if' 'less' 'than' tries=INT 'tries' { value.put("tries",$tries.getText()); };
 
 answer returns[Hashtable<String,String> value]: 
   (ans=textAnswer {value=ans;} | ans=numberAnswer {value=ans;} | ans=yesNoAnswer {value=ans;} | ans=optionAnswer{value=ans;});

@@ -1,7 +1,6 @@
 package it.unibg.qatest.test;
 
 import java.io.FileReader;
-import java.util.Hashtable;
 
 import org.antlr.runtime.*;
 
@@ -25,8 +24,6 @@ public class ParserTester {
 		} catch (Exception e) {
 			System.out.println("Parsing abortito\n\n");
 			e.printStackTrace();
-			
-			Hashtable<String,String> h = new Hashtable<String,String>();
 		}
 		
 	}
