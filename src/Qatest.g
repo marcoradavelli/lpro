@@ -22,7 +22,9 @@ options {
   String read(String s) {
     System.out.print(s);
     BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-    return br.readLine();
+    try {
+      return br.readLine();
+    } catch (Exception e) {e.printStackTrace(); return "";}
   }
   Hashtable<String,String> createDefaultOptions() {
     Hashtable<String,String> value=new Hashtable<String,String>(); 
@@ -92,7 +94,7 @@ nextRule: 'Jumpto' (qaPart | next=STRING) 'if' 'less' 'than' tries=INT 'tries';
 answer returns[Hashtable<String,String> value]: 
   (ans=textAnswer {value=ans;} | ans=numberAnswer {value=ans;} | ans=yesNoAnswer {value=ans;} | ans=optionAnswer{value=ans;});
 
-textAnswer returns[Hashtable<String,String> value]: text=STRING { Hashtable<String,String> value=new Hashtable<>(); value.put("answerType","text"); value.put("value", $text.getText()); };
+textAnswer returns[Hashtable<String,String> value]: text=STRING { value=new Hashtable<>(); value.put("answerType","text"); value.put("value", $text.getText()); };
 
 numberAnswer returns[Hashtable<String,String> value]: 
   { value = new Hashtable<>(); value.put("answerType", "number"); }
@@ -103,7 +105,9 @@ expressionAnswer returns[double value]:
   'eval' expression=STRING { 
     ScriptEngineManager manager = new ScriptEngineManager(); //Source: http://stackoverflow.com/questions/2605032/is-there-an-eval-function-in-java
     ScriptEngine engine = manager.getEngineByName("js");
-    value = Double.parseDouble(engine.eval($expression.getText()));
+    try {
+      value = Double.parseDouble((String)engine.eval($expression.getText()));
+    } catch (Exception e) {e.printStackTrace(); value=0;}
   };
 
 yesNoAnswer returns[Hashtable<String,String> value]: 
