@@ -21,7 +21,7 @@ options {
   
   String read(String s) {
     if (skip!=null) return null;
-    System.out.print(s+" ");
+    System.out.print(s+"? ");
     BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
     try {
       return br.readLine();
@@ -108,7 +108,7 @@ question[Hashtable<String,String> value]:
       }
       for (Hashtable<String,String> correct : correctAns) {
         String type=correct.get("answerType");
-	      if (type.equals("option")) isCorrect = Integer.parseInt(correct.get("value"))==Integer.parseInt((read("Select option (1 - "+candidates.size()+"): ")));
+	      if (type.equals("option")) isCorrect = Integer.parseInt(correct.get("value"))==Integer.parseInt((read("Select option (1 - "+candidates.size()+")")));
 	      else if (type.equals("text")) isCorrect = (value.containsKey("caseSensitive") && Boolean.parseBoolean(value.get("caseSensitive"))) ? correct.get("value").equals(read("Your answer")) : correct.get("value").equalsIgnoreCase(read("Your answer"));
 		    else if (type.equals("number")) isCorrect = checkInRange(Double.parseDouble(correct.get("value")), readDouble("Your answer"), correct.containsKey("epsilon") ? Double.parseDouble(correct.get("epsilon")) : 0);
 		    else if (type.equals("yesno")) isCorrect = (readBoolean("Your answer","yes","no")==Boolean.parseBoolean(correct.get("value")));

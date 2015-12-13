@@ -12,17 +12,16 @@ public class ParserTester {
 
 	public static void main(String[] args) {
 		CommonTokenStream tokens;
-		String fileIn = "Resources/input.qa";
+		String fileIn = args.length>1 ? args[1] : "Resources/input.qa";
 
 		try {
-			System.out.println("Parsing iniziato");
 			QatestLexer lexer = new QatestLexer(new ANTLRReaderStream(new FileReader(fileIn)));
 			tokens = new CommonTokenStream(lexer);
 			parser = new QatestParser(tokens);
 			parser.qaTest();
-			System.out.println("Parsing terminato con successo\n\n");
+			System.out.println("Congratulations! You're done!\n\n");
 		} catch (Exception e) {
-			System.out.println("Parsing abortito\n\n");
+			System.out.println("Parsing aborted\n\n");
 			e.printStackTrace();
 		}
 		
