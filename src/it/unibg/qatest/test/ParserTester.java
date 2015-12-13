@@ -12,7 +12,7 @@ public class ParserTester {
 
 	public static void main(String[] args) {
 		CommonTokenStream tokens;
-		String fileIn = args.length>1 ? args[1] : "Resources/input.qa";
+		String fileIn = args.length>0 ? args[0] : "Resources/input.qa";
 
 		try {
 			QatestLexer lexer = new QatestLexer(new ANTLRReaderStream(new FileReader(fileIn)));
