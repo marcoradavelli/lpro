@@ -11,24 +11,29 @@ Section: "Math"
 	[max 3 tries]
 	
 	Question Sum:
+		[1 points]
 		"How much is 2 + 2?" -> 4!
 		Jumpto "Continent" if less than 2 tries
 
 	Question Sub:
+		[1 points]
 		"How much is 2 - 2?" -> #1!
 		Candidates { 0, 1, 2 }
 	
 	Question SquareRoot:
+		[2 points]
 		"How much is Sqrt(2)?" -> { 1.41 +- 0.01, -1.41 +- 0.01 }!
 		Jumpto "Geography" if less than 2 tries
 	
 	Question Pi:
+		[1 points]
 		"What is the value of PI?" -> eval "Math.PI" +- 0.01!
 }
 
 Section Geography: "Geography"
 {
 	Question Continent:
+		[1 points]
 		"What continent is Italy part of?" -> #3!
 	Candidates {
 		"Africa",
@@ -37,5 +42,6 @@ Section Geography: "Geography"
 	}
 
 	Question:
+		[2 points]
 		"What is the capital of Italy?" -> "Rome"!
 }

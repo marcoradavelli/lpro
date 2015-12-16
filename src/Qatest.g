@@ -18,6 +18,7 @@ options {
 @members {
   String skip=null;
   boolean skipIsSection;
+  public int totalScore;
   
   String read(String s) {
     if (skip!=null) return null;
@@ -91,7 +92,7 @@ qaSection[Hashtable<String,String> value]:
   '}';
 
 question[Hashtable<String,String> value]:
-  'Question' (name=ID)? ':' text=string '->' correctAns=correctAnswers '!'
+  'Question' (name=ID)? ':' (score=scoreOption)? text=string '->' correctAns=correctAnswers '!'
   (candidates=candidateAnswers)?
   (nextRules=jumpRules)? 
   { 
@@ -115,6 +116,7 @@ question[Hashtable<String,String> value]:
 		    if (isCorrect) break;
       }
       println(isCorrect ? "Correct!" : "Wrong!"); 
+      if (isCorrect) totalScore+=score;
       count++;
     }
     if (nextRules!=null && nextRules.size()>0 && isCorrect) {
@@ -180,6 +182,8 @@ optionAnswer returns[Hashtable<String,String> value]:
 string returns[String value]: 
   val=STRING { value=$val.getText().substring(1,$val.getText().length()-1); };
   
+scoreOption returns[int points]:
+  '[' val=INT 'points' ']' { points = Integer.parseInt($val.getText()); };
 
 // lexer
 
