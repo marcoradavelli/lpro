@@ -16,7 +16,6 @@ Section: "Math"
 		Jumpto "Continent" if less than 2 tries
 
 	Question Sub:
-		[1 points]
 		"How much is 2 - 2?" -> #1!
 		Candidates { 0, 1, 2 }
 	
