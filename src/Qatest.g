@@ -9,6 +9,7 @@ options {
   import java.io.*;
   import java.util.Hashtable;
   import javax.script.*;
+  import it.unibg.qatest.environment.*;
 }
 
 @lexer::header {
@@ -16,55 +17,15 @@ options {
 }
 
 @members {
-  String skip=null;
-  boolean skipIsSection;
-  public int totalScore;
-  
-  String read(String s) {
-    if (skip!=null) return null;
-    System.out.print(s+"? ");
-    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-    try {
-      return br.readLine();
-    } catch (Exception e) {e.printStackTrace(); return "";}
-  }
-  double readDouble(String s) {
-    return Double.parseDouble(read(s));
-  }
-  boolean readBoolean(String s, String yes, String no) {
-    return read(s).equalsIgnoreCase(yes);
-  }
-  
-  boolean checkInRange(double expected, double actual, double epsilon) {
-    return expected<=actual+epsilon && expected>=actual-epsilon;
-  }
-  
-  void println(String s) {
-    if (skip==null) System.out.println(s);
-  }
-  
-  Hashtable<String,String> createDefaultOptions() {
-    Hashtable<String,String> value=new Hashtable<String,String>(); 
-    value.put("maxTries","1"); 
-    value.put("revealAnswer","false");
-    return value;
-  }
-  
-  double eval(String s) {
-    ScriptEngineManager manager = new ScriptEngineManager(); //Source: http://stackoverflow.com/questions/2605032/is-there-an-eval-function-in-java
-    ScriptEngine engine = manager.getEngineByName("js");
-    try {
-      return (Double)engine.eval(s);
-    } catch (Exception e) {e.printStackTrace(); return 0;}
-  }
+  public ParserEnvironment env = new ParserEnvironment();
 }
 
 // parser
 
-qaTest: 'Title: ' string (opt=qaContainerOptions)? (qaPart[opt!=null ? opt : createDefaultOptions()])*;
+qaTest: 'Title: ' string (opt=qaContainerOptions)? (qaPart[opt!=null ? opt : env.createDefaultOptions()])*;
 
 qaContainerOptions returns[Hashtable<String,String> value]:
-  { value=createDefaultOptions(); }
+  { value=env.createDefaultOptions(); }
   (qaRevealOption { value.put("revealAnswer","true"); })?
   (maxTries=qaMaxTriesOption { value.put("maxTries",""+maxTries); })
   (caseSensitive=qaCaseSensitivity { value.put("caseSensitive",""+caseSensitive); })? ;
@@ -83,10 +44,7 @@ qaPart[Hashtable<String,String> opt]: question[opt] | qaSection[opt];
 qaSection[Hashtable<String,String> value]: 
   'Section' (name=ID)? ':' title=string 
   '{'
-    { 
-    if (skip!=null && skip.equals(title)) skip=null;
-    println("Section "+title); 
-    }
+    { env.doSection(title); }
     (containerOptions=qaContainerOptions {value.putAll(containerOptions);})?
     (q=question[value])*
   '}';
@@ -95,45 +53,7 @@ question[Hashtable<String,String> value]:
   'Question' (name=ID)? ':' (score=scoreOption)? text=string '->' correctAns=correctAnswers '!'
   (candidates=candidateAnswers)?
   (nextRules=jumpRules)? 
-  { 
-  boolean isCorrect=false; // at the beginning it should be false, otherwise it would skip the question
-  int count=0;
-  if (skip!=null && $name!=null && skip.equals($name.getText())) skip=null;
-  if (skip==null) {
-    while (!isCorrect && count < Integer.parseInt(value.get("maxTries"))) {
-      println(text);
-      if (candidates!=null && candidates.size()>0) {
-        for (int i=0; i<candidates.size(); i++) {
-          println((i+1)+") "+candidates.get(i).get("value"));
-        } 
-      }
-      for (Hashtable<String,String> correct : correctAns) {
-        String type=correct.get("answerType");
-	      if (type.equals("option")) isCorrect = Integer.parseInt(correct.get("value"))==Integer.parseInt((read("Select option (1 - "+candidates.size()+")")));
-	      else if (type.equals("text")) isCorrect = (value.containsKey("caseSensitive") && Boolean.parseBoolean(value.get("caseSensitive"))) ? correct.get("value").equals(read("Your answer")) : correct.get("value").equalsIgnoreCase(read("Your answer"));
-		    else if (type.equals("number")) isCorrect = checkInRange(Double.parseDouble(correct.get("value")), readDouble("Your answer"), correct.containsKey("epsilon") ? Double.parseDouble(correct.get("epsilon")) : 0);
-		    else if (type.equals("yesno")) isCorrect = (readBoolean("Your answer","yes","no")==Boolean.parseBoolean(correct.get("value")));
-		    if (isCorrect) break;
-      }
-      println(isCorrect ? "Correct!" : "Wrong!"); 
-      if (isCorrect) totalScore+=score;
-      count++;
-    }
-    if (nextRules!=null && nextRules.size()>0 && isCorrect) {
-      for (Hashtable<String,String> rule : nextRules) {
-        if (count < Integer.parseInt(rule.get("tries"))) {
-          skip = rule.get("next");
-        }
-      }
-    }
-    if (!isCorrect) {
-      println("No more tries available for this question.");
-      if (Boolean.parseBoolean(value.get("revealAnswer"))) {
-        println("The correct answer is " + correctAns.get(0).get("value"));
-      }
-    }
-  }
-  };
+  { env.doQuestion($name, text, value, candidates, correctAns, nextRules, score); };
 
 correctAnswers returns[ArrayList<Hashtable<String,String>> correctAnswers]:
   { correctAnswers = new ArrayList<>(); }
@@ -167,7 +87,7 @@ range returns[double value]:
 
 expressionAnswer returns[double value]: 
   'eval' expression=string { 
-    value = eval(expression);
+    value = env.eval(expression);
   };
 
 yesNoAnswer returns[Hashtable<String,String> value]: 
