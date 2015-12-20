@@ -19,7 +19,7 @@ public class ParserTester {
 			tokens = new CommonTokenStream(lexer);
 			parser = new QatestParser(tokens);
 			parser.qaTest();
-			System.out.println("Congratulations! You're done! (Total score: "+(parser.env).totalScore+")\n\n");
+			System.out.println("Congratulations! You're done! (Total score: "+parser.env.totalScore+"/"+parser.env.maxScore+")\n\n");
 		} catch (Exception e) {
 			System.out.println("Parsing aborted\n\n");
 			e.printStackTrace();

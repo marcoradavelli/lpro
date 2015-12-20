@@ -13,6 +13,7 @@ import org.antlr.runtime.Token;
 public class ParserEnvironment {
 	public String skip = null;
 	public int totalScore;
+	public int maxScore;
 
 	/** reads the user's answer to a question
 	 * @param s the question to be printed out
@@ -94,9 +95,10 @@ public class ParserEnvironment {
 					if (isCorrect) break; // if one correct answer is found, then break the cycle.
 				}
 				println(isCorrect ? "Correct!" : "Wrong!"); 
-				if (isCorrect) totalScore+=score;
 				count++;
 			}
+			maxScore+=score;
+			if (isCorrect) totalScore+=score;
 			if (nextRules!=null && nextRules.size()>0 && isCorrect) {
 				for (Hashtable<String,String> rule : nextRules) {
 					if (count < Integer.parseInt(rule.get("tries"))) {
