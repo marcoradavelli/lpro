@@ -50,7 +50,7 @@ qaSection[Hashtable<String,String> value]:
   '}';
 
 question[Hashtable<String,String> value]:
-  'Question' (name=ID)? ':' (score=scoreOption)? text=string '->' correctAns=correctAnswers '!'
+  'Question' (name=ID)? ':' {score=1;} (score=scoreOption)? text=string '->' correctAns=correctAnswers '!'
   (candidates=candidateAnswers)?
   (nextRules=jumpRules)? 
   { env.doQuestion($name, text, value, candidates, correctAns, nextRules, score); };

@@ -3,6 +3,7 @@ Title: "A quiz"
 [case sensitive]
 
 Question:
+	[0 points]
 	"Are you ready?" -> yes!
 
 Section: "Math"
@@ -11,7 +12,6 @@ Section: "Math"
 	[max 3 tries]
 	
 	Question Sum:
-		[1 points]
 		"How much is 2 + 2?" -> 4!
 		Jumpto "Continent" if less than 2 tries
 
@@ -25,14 +25,12 @@ Section: "Math"
 		Jumpto "Geography" if less than 2 tries
 	
 	Question Pi:
-		[1 points]
 		"What is the value of PI?" -> eval "Math.PI" +- 0.01!
 }
 
 Section Geography: "Geography"
 {
 	Question Continent:
-		[1 points]
 		"What continent is Italy part of?" -> #3!
 	Candidates {
 		"Africa",
